@@ -19,7 +19,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.NotificationService"
+        <service android:name=".service.NotificationListenerImpl"
             android:exported="true"
             android:label="@string/service_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

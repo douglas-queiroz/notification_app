@@ -4,10 +4,13 @@ import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.lifecycle.MutableLiveData
+import com.douglasqueiroz.notification.dto.NotificationDto
 
-class NotificationService: NotificationListenerService() {
+class NotificationListenerImpl: NotificationListenerService(), NotificationListener {
 
-    private var livedata = MutableLiveData<Array<StatusBarNotification>>()
+    private var livedata = MutableLiveData<List<NotificationDto>>()
+
+    override fun getActiveNotificationLiveData() = livedata
 
     override fun onBind(intent: Intent?) = when(intent?.action) {
             SERVICE_INTERFACE -> super.onBind(intent)
@@ -16,11 +19,16 @@ class NotificationService: NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        livedata.postValue(activeNotifications)
+        updateActiveNotificationLiveData()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        livedata.postValue(activeNotifications)
+        updateActiveNotificationLiveData()
+    }
+
+    private fun updateActiveNotificationLiveData() {
+        val notifications = activeNotifications.map { NotificationDto(it) }
+        livedata.postValue(notifications)
     }
 }
