@@ -1,6 +1,8 @@
 package com.douglasqueiroz.notification.service
 
-interface NotificationListenerConnection {
+import android.content.ServiceConnection
+
+interface NotificationListenerConnection: ServiceConnection {
 
     fun getNotificationListener(): NotificationListener?
 }
