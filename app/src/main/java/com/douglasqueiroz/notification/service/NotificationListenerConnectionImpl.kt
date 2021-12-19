@@ -1,10 +1,9 @@
 package com.douglasqueiroz.notification.service
 
 import android.content.ComponentName
-import android.content.ServiceConnection
 import android.os.IBinder
 
-class NotificationListenerConnectionImpl: ServiceConnection, NotificationListenerConnection {
+class NotificationListenerConnectionImpl: NotificationListenerConnection {
 
     private var notificationListener: NotificationListener? = null
     override fun getNotificationListener() = notificationListener
