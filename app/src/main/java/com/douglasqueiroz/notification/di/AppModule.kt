@@ -9,7 +9,10 @@ object AppModule {
     fun startKoin(app: Application) = startKoin {
         androidContext(app)
         modules(
-            listOf()
+            listOf(
+                ViewModelModule.get(),
+                ServiceModule.get()
+            )
         )
     }
 }
