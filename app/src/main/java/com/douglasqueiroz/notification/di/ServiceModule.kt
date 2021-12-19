@@ -2,7 +2,9 @@ package com.douglasqueiroz.notification.di
 
 import org.koin.dsl.module
 
-object ViewModelModule {
+object ServiceModule {
 
-    fun get() = module {}
+    fun get() = module {
+
+    }
 }
