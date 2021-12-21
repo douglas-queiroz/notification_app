@@ -11,7 +11,8 @@ object AppModule {
         modules(
             listOf(
                 ViewModelModule.get(),
-                ServiceModule.get()
+                ServiceModule.get(),
+                UtilModule.get()
             )
         )
     }

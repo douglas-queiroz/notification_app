@@ -3,8 +3,10 @@ package com.douglasqueiroz.notification.ui
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.douglasqueiroz.notification.databinding.ActivityMainBinding
 import com.douglasqueiroz.notification.dto.NotificationDto
@@ -25,9 +27,16 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-
+        binding.permissionButton.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+        }
 
         setupRecyclerView()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkNotificationPermission()
     }
 
     private fun setupRecyclerView() {
@@ -44,6 +53,7 @@ class MainActivity : AppCompatActivity() {
                     is MainViewModel.State.BindService -> bindService(state.connection)
                     is MainViewModel.State.UnbindService -> unbindService(state.connection)
                     is MainViewModel.State.UpdateNotificationList -> updateNotificationList(state.notificationList)
+                    is MainViewModel.State.SetPermissionButtonVisible -> setPermissionButtonVisible(state.visible)
                 }
             }
         }
@@ -56,15 +66,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNotificationList(notificationList: List<NotificationDto>) {
-        notificationList.forEach {
-            Log.i("RiM", "${it.title}")
-        }
-
         moviesAdapter.notificationList = notificationList
         moviesAdapter.notifyDataSetChanged()
+        binding.notificationRecyclerView.isVisible = true
+        setPermissionButtonVisible(false)
     }
 
     private fun unbindService(connection: NotificationListenerConnection) {
         super.unbindService(connection)
+    }
+
+    private fun setPermissionButtonVisible(visible: Boolean) {
+        binding.permissionButton.isVisible = visible
+        binding.notificationRecyclerView.isVisible = !visible
     }
 }

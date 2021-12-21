@@ -7,19 +7,22 @@ import com.douglasqueiroz.notification.service.NotificationListener
 import com.douglasqueiroz.notification.service.NotificationListenerConnection
 import com.douglasqueiroz.notification.service.NotificationListenerConnectionStatus
 import com.douglasqueiroz.notification.service.NotificationListenerEvent
+import com.douglasqueiroz.notification.util.PermissionUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainViewModel(
-    private val connection: NotificationListenerConnection
+    private val connection: NotificationListenerConnection,
+    private val permissionUtil: PermissionUtil
 ): ViewModel() {
 
     private var _stateFlow = MutableStateFlow<State>(State.BindService(connection))
     var stateFlow = _stateFlow.asStateFlow()
 
     sealed class State {
+        class SetPermissionButtonVisible(val visible: Boolean): State()
         class UpdateNotificationList(val notificationList: List<NotificationDto>): State()
         class BindService(val connection: NotificationListenerConnection): State()
         class UnbindService(val connection: NotificationListenerConnection): State()
@@ -29,6 +32,12 @@ class MainViewModel(
         loadNotifications()
     }
 
+    fun checkNotificationPermission() {
+        if(!permissionUtil.notificationPermissionGrant()) {
+            _stateFlow.value = State.SetPermissionButtonVisible(true)
+        }
+    }
+
     private fun loadNotifications() = viewModelScope.launch {
 
         connection.stateFlow.collectLatest { status ->
@@ -36,7 +45,9 @@ class MainViewModel(
                 is NotificationListenerConnectionStatus.Connected -> {
                     handleStatusConnected(status.notificationListener)
                 }
-                is NotificationListenerConnectionStatus.Disconnected -> {}
+                is NotificationListenerConnectionStatus.Disconnected -> {
+                    _stateFlow.value = State.SetPermissionButtonVisible(true)
+                }
             }
         }
     }
@@ -47,7 +58,9 @@ class MainViewModel(
                 is NotificationListenerEvent.Connected, NotificationListenerEvent.NewNotification -> {
                     _stateFlow.value = State.UpdateNotificationList(notificationListener.getActiveNotification())
                 }
-                is NotificationListenerEvent.Disconnected -> {}
+                is NotificationListenerEvent.Disconnected -> {
+                    _stateFlow.value = State.SetPermissionButtonVisible(true)
+                }
             }
         }
     }

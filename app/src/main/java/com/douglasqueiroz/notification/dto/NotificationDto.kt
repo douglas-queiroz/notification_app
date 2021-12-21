@@ -11,8 +11,8 @@ data class NotificationDto(
 ) {
 
     constructor(statusBarNotification: StatusBarNotification): this(
-        title = statusBarNotification.notification.extras.getString(Notification.EXTRA_TITLE) ?: "No Title",
-        content = statusBarNotification.notification.extras.getString(Notification.EXTRA_TEXT) ?: "No Content",
+        title = statusBarNotification.notification.extras.get(Notification.EXTRA_TITLE) as? String ?: "No Title",
+        content = statusBarNotification.notification.extras.get(Notification.EXTRA_TEXT) as? String ?: "No Content",
         icon = statusBarNotification.notification.smallIcon,
     )
 }
