@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateNotificationList(notificationList: List<NotificationDto>) {
+    private fun updateNotificationList(notificationList: List<NotificationItem>) {
         moviesAdapter.notificationList = notificationList
         moviesAdapter.notifyDataSetChanged()
         binding.notificationRecyclerView.isVisible = true
