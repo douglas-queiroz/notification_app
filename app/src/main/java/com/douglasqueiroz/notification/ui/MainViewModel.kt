@@ -4,15 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.douglasqueiroz.notification.dto.NotificationDto
 import com.douglasqueiroz.notification.repository.NotificationDao
-import com.douglasqueiroz.notification.service.NotificationListener
 import com.douglasqueiroz.notification.service.NotificationListenerConnection
-import com.douglasqueiroz.notification.service.NotificationListenerConnectionStatus
-import com.douglasqueiroz.notification.service.NotificationListenerEvent
 import com.douglasqueiroz.notification.util.IconUtil
 import com.douglasqueiroz.notification.util.PermissionUtil
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class MainViewModel(
@@ -22,63 +17,67 @@ class MainViewModel(
     private val iconUtil: IconUtil
 ): ViewModel() {
 
-    private var notificationSource = NotificationSource.ACTIVE_NOTIFICATIONS
+    private var notificationSource = NotificationSource.TRACKED_NOTIFICATIONS
+
+    private var trackedNotificationList = emptyList<NotificationDto>()
+    private var activeNotificationList = emptyList<NotificationDto>()
 
     private var _stateFlow = MutableStateFlow<State>(State.BindService(connection))
-    var stateFlow = _stateFlow.asStateFlow()
+    val stateFlow = _stateFlow.asStateFlow()
 
     sealed class State {
-        class SetPermissionButtonVisible(val visible: Boolean): State()
+        object SetPermissionButtonVisible: State()
         class UpdateNotificationList(val notificationList: List<NotificationItem>): State()
         class BindService(val connection: NotificationListenerConnection): State()
         class UnbindService(val connection: NotificationListenerConnection): State()
+        object ShowEmptyListView: State()
     }
 
     init {
-        loadNotifications()
+        collectServiceConnectionStatus()
+        collectNotificationDao()
     }
 
-    fun checkNotificationPermission() {
-        if(!permissionUtil.notificationPermissionGrant()) {
-            _stateFlow.value = State.SetPermissionButtonVisible(true)
-        }
-    }
+    private fun collectNotificationDao() = viewModelScope.launch {
+        notificationDao.getAll().collectLatest {
+            trackedNotificationList = it
 
-    fun changeNotificationSource(newSource: NotificationSource) {
-        when(newSource) {
-            NotificationSource.ACTIVE_NOTIFICATIONS -> handleActiveNotificationSource()
-            NotificationSource.TRACKED_NOTIFICATIONS -> handleTrackedNotificationSource()
-        }
-    }
-
-    private fun handleActiveNotificationSource() {
-        _stateFlow.value = State.BindService(connection)
-    }
-
-    private fun handleTrackedNotificationSource() {
-        _stateFlow.value = State.UnbindService(connection)
-
-    }
-
-    private fun loadNotifications() = viewModelScope.launch {
-
-        connection.stateFlow.collectLatest { status ->
-            when(status) {
-                is NotificationListenerConnectionStatus.Connected -> {
-                    handleStatusConnected(status.notificationListener)
-                }
-                is NotificationListenerConnectionStatus.Disconnected -> {}
+            if (notificationSource == NotificationSource.TRACKED_NOTIFICATIONS
+                && permissionUtil.notificationPermissionGrant()) {
+                updateNotificationList(it)
             }
         }
     }
 
-    private suspend fun handleStatusConnected(notificationListener: NotificationListener) {
-        notificationListener.stateFlow.collectLatest { event ->
-            when(event) {
-                is NotificationListenerEvent.Connected, NotificationListenerEvent.NewNotification -> {
-                    updateNotificationList(notificationListener.getActiveNotification())
-                }
-                is NotificationListenerEvent.Disconnected -> {}
+    fun checkNotificationPermission() {
+        if(!permissionUtil.notificationPermissionGrant()) {
+            _stateFlow.value = State.SetPermissionButtonVisible
+        } else {
+            updateListFromSource(notificationSource)
+        }
+    }
+
+    fun setNotificationSource(newSource: NotificationSource) {
+        if (newSource != notificationSource && permissionUtil.notificationPermissionGrant()) {
+            notificationSource = newSource
+            updateListFromSource(newSource)
+        }
+    }
+
+    private fun updateListFromSource(newSource: NotificationSource) {
+        val list = when (newSource) {
+            NotificationSource.TRACKED_NOTIFICATIONS -> trackedNotificationList
+            NotificationSource.ACTIVE_NOTIFICATIONS -> activeNotificationList
+        }
+
+        updateNotificationList(list)
+    }
+
+    private fun collectServiceConnectionStatus() = viewModelScope.launch {
+        connection.stateFlow.collectLatest { list ->
+            this@MainViewModel.activeNotificationList = list
+            if (notificationSource == NotificationSource.ACTIVE_NOTIFICATIONS) {
+                updateNotificationList(list)
             }
         }
     }
@@ -91,12 +90,17 @@ class MainViewModel(
                 content = it.content
             )
         }.also {
-            _stateFlow.value = State.UpdateNotificationList(it)
+            if (it.isEmpty()) {
+                _stateFlow.value = State.ShowEmptyListView
+            } else {
+                _stateFlow.value = State.UpdateNotificationList(it)
+            }
         }
     }
 
     override fun onCleared() {
         super.onCleared()
+        connection.removeCallbacks()
         _stateFlow.value = State.UnbindService(connection)
     }
 }

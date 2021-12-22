@@ -4,16 +4,18 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.douglasqueiroz.notification.R
 import com.douglasqueiroz.notification.databinding.ActivityMainBinding
-import com.douglasqueiroz.notification.dto.NotificationDto
 import com.douglasqueiroz.notification.service.NotificationListener
 import com.douglasqueiroz.notification.service.NotificationListenerConnection
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.android.viewmodel.ext.android.viewModel
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -32,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupRecyclerView()
+        subscribeViewModel()
     }
 
     override fun onResume() {
@@ -44,19 +47,36 @@ class MainActivity : AppCompatActivity() {
         binding.notificationRecyclerView.adapter = moviesAdapter
     }
 
-    override fun onStart() {
-        super.onStart()
-
-        lifecycleScope.launchWhenCreated {
+    private fun subscribeViewModel() {
+        lifecycleScope.launchWhenStarted {
             viewModel.stateFlow.collectLatest { state ->
-                when(state) {
+                when (state) {
+                    is MainViewModel.State.UpdateNotificationList -> updateNotificationList(state.notificationList)
+                    is MainViewModel.State.SetPermissionButtonVisible -> setPermissionButtonVisible()
+                    is MainViewModel.State.ShowEmptyListView -> showEmptyListView()
                     is MainViewModel.State.BindService -> bindService(state.connection)
                     is MainViewModel.State.UnbindService -> unbindService(state.connection)
-                    is MainViewModel.State.UpdateNotificationList -> updateNotificationList(state.notificationList)
-                    is MainViewModel.State.SetPermissionButtonVisible -> setPermissionButtonVisible(state.visible)
                 }
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater = menuInflater
+        inflater.inflate(R.menu.menu_notification_source, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            R.id.action_active_notifications -> NotificationSource.ACTIVE_NOTIFICATIONS
+            R.id.action_tracked_notifications -> NotificationSource.TRACKED_NOTIFICATIONS
+            else -> null
+        }?.also {
+            viewModel.setNotificationSource(it)
+        }
+
+        return super.onOptionsItemSelected(item)
     }
 
     private fun bindService(connection: NotificationListenerConnection) {
@@ -68,16 +88,25 @@ class MainActivity : AppCompatActivity() {
     private fun updateNotificationList(notificationList: List<NotificationItem>) {
         moviesAdapter.notificationList = notificationList
         moviesAdapter.notifyDataSetChanged()
+
         binding.notificationRecyclerView.isVisible = true
-        setPermissionButtonVisible(false)
+        binding.emptyMsgTextView.isVisible = false
+        binding.permissionButton.isVisible = false
     }
 
     private fun unbindService(connection: NotificationListenerConnection) {
         super.unbindService(connection)
     }
 
-    private fun setPermissionButtonVisible(visible: Boolean) {
-        binding.permissionButton.isVisible = visible
-        binding.notificationRecyclerView.isVisible = !visible
+    private fun setPermissionButtonVisible() {
+        binding.permissionButton.isVisible = true
+        binding.notificationRecyclerView.isVisible = false
+        binding.emptyMsgTextView.isVisible = false
+    }
+
+    private fun showEmptyListView() {
+        binding.emptyMsgTextView.isVisible = true
+        binding.permissionButton.isVisible = false
+        binding.notificationRecyclerView.isVisible = false
     }
 }

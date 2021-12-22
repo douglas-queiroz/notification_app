@@ -5,20 +5,25 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.douglasqueiroz.notification.dto.NotificationDto
 import com.douglasqueiroz.notification.repository.NotificationDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import leakcanary.AppWatcher
 import org.koin.android.ext.android.inject
 
-class NotificationListener: NotificationListenerService() {
+open class NotificationListener: NotificationListenerService() {
 
     private val notificationDao: NotificationDao by inject()
+    private val ioScope = CoroutineScope(Dispatchers.IO + Job())
+    private var isConnected = false
 
-    private val _stateFlow = MutableStateFlow<NotificationListenerEvent>(
-        value = NotificationListenerEvent.Disconnected
-    )
-    val stateFlow = _stateFlow.asStateFlow()
-
-    fun getActiveNotification() = activeNotifications.map { NotificationDto(it) }
+    var stateFlow: MutableStateFlow<List<NotificationDto>>? = null
+    set(value) {
+        field = value
+        updateActiveNotifications()
+    }
 
     override fun onBind(intent: Intent?) = when(intent?.action) {
             SERVICE_INTERFACE -> super.onBind(intent)
@@ -27,21 +32,37 @@ class NotificationListener: NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        _stateFlow.value = NotificationListenerEvent.Connected
+        isConnected = true
+        updateActiveNotifications()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        _stateFlow.value = NotificationListenerEvent.NewNotification
         saveNotification(sbn)
+        updateActiveNotifications()
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        super.onNotificationRemoved(sbn)
+        updateActiveNotifications()
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        _stateFlow.value = NotificationListenerEvent.Disconnected
+        isConnected = false
     }
 
-    private fun saveNotification(sbn: StatusBarNotification?) {
+    private fun updateActiveNotifications() {
+        if (isConnected) {
+            activeNotifications.map {
+                NotificationDto(it)
+            }.also {
+                stateFlow?.value = it
+            }
+        }
+    }
+
+    private fun saveNotification(sbn: StatusBarNotification?) = ioScope.launch {
         sbn?.let { statusBarNotification ->
             NotificationDto(statusBarNotification)
         }?.also { notification ->
