@@ -8,7 +8,7 @@ import com.douglasqueiroz.notification.dto.NotificationDto
 
 class NotificationAdapter: RecyclerView.Adapter<NotificationViewHolder>() {
 
-    var notificationList = emptyList<NotificationDto>()
+    var notificationList = emptyList<NotificationItem>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationViewHolder {
         val inflater = LayoutInflater.from(parent.context)
