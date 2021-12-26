@@ -1,0 +1,19 @@
+
+ext {
+    kotlin_version = '1.5.20'
+    gradle_version = '7.0.4'
+
+    androidxcore_version = '1.7.0'
+    appcompat_version = '1.4.0'
+    constraintlayout_version = '2.1.2'
+    material_version = '1.4.0'
+    lifecycle_version = '2.4.0'
+    koin_version = '2.2.3'
+    room_version = '2.4.0'
+    coroutine_version = '1.5.2'
+    leakcanary_version = '2.7'
+    circleimageview_version = '3.1.0'
+    unittest_version = '4.13.2'
+    mockk_version = '1.12.0'
+    coretesting_version = '2.1.0'
+}

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface NotificationDao {
 
-    @Query("SELECT * FROM NotificationDto")
+    @Query("SELECT * FROM NotificationDto order by id limit 20")
     fun getAll(): Flow<List<NotificationDto>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
