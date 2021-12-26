@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Notification</string>
+    <string name="service_name">notification_service</string>
+    <string name="permission_button_title">Go to Settings</string>
+    <string name="empty_msg_text_view">There is no notification</string>
+    <string name="menu_active_notification_title">Active Notifications</string>
+    <string name="menu_tracked_notification_title">Tracked Notifications</string>
 </resources>
