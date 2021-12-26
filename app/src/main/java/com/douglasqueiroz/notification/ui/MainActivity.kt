@@ -8,12 +8,10 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import androidx.lifecycle.lifecycleScope
 import com.douglasqueiroz.notification.R
 import com.douglasqueiroz.notification.databinding.ActivityMainBinding
 import com.douglasqueiroz.notification.service.NotificationListener
 import com.douglasqueiroz.notification.service.NotificationListenerConnection
-import kotlinx.coroutines.flow.collectLatest
 import org.koin.android.viewmodel.ext.android.viewModel
 
 
@@ -30,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(view)
 
         binding.permissionButton.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
 
         setupRecyclerView()
@@ -48,15 +46,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun subscribeViewModel() {
-        lifecycleScope.launchWhenStarted {
-            viewModel.stateFlow.collectLatest { state ->
-                when (state) {
-                    is MainViewModel.State.UpdateNotificationList -> updateNotificationList(state.notificationList)
-                    is MainViewModel.State.SetPermissionButtonVisible -> setPermissionButtonVisible()
-                    is MainViewModel.State.ShowEmptyListView -> showEmptyListView()
-                    is MainViewModel.State.BindService -> bindService(state.connection)
-                    is MainViewModel.State.UnbindService -> unbindService(state.connection)
-                }
+
+        viewModel.getStateLiveData().observe(this) { state ->
+            when (state) {
+                is MainViewModel.State.UpdateNotificationList -> updateNotificationList(state.notificationList)
+                is MainViewModel.State.SetPermissionButtonVisible -> setPermissionButtonVisible()
+                is MainViewModel.State.ShowEmptyListView -> showEmptyListView()
+                is MainViewModel.State.BindService -> bindService(state.connection)
+                is MainViewModel.State.UnbindService -> unbindService(state.connection)
             }
         }
     }
