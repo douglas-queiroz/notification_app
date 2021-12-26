@@ -5,6 +5,4 @@
     <string name="empty_msg_text_view">There is no notification</string>
     <string name="menu_active_notification_title">Active Notifications</string>
     <string name="menu_tracked_notification_title">Tracked Notifications</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
