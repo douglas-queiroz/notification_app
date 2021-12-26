@@ -1,6 +1,6 @@
 # Notification App
 
-![App screenshot!](/screenshot.png[img.png](img.png) "App screenshot")
+![App screenshot!](/screenshot.png "App screenshot")
 
 Features:
 - Tracks device's notifications;
